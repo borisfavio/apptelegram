@@ -1,25 +1,29 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import { initTelegram, getUserInfo } from './utils/telegram';
+import LoginForm from './components/LoginForm';
+import AttendanceForm from './components/AttendanceForm';
 
-function App() {
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    initTelegram();
+    const tgUser = getUserInfo();
+    if (tgUser) {
+      setUser(tgUser);
+    }
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="p-4">
+      {loggedIn ? (
+        <AttendanceForm user={user} />
+      ) : (
+        <LoginForm onLoginSuccess={() => setLoggedIn(true)} />
+      )}
     </div>
   );
-}
+};
 
 export default App;
