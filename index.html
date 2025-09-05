@@ -1,11 +1,123 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <title>Lector QR - Asistencia</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    #reader {
+      width: 320px;
+      margin: 20px auto;
+      display: none;
+      border: 2px solid #4CAF50;
+      border-radius: 10px;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    table {
+      width: 90%;
+      max-width: 600px;
+      border-collapse: collapse;
+      margin-top: 25px;
+      background: white;
+      box-shadow: 0px 3px 6px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #4CAF50;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+  </style>
 </head>
 <body>
-    <h1>hola</h1>
+  <h1>Registro de Asistencia</h1>
+  
+  <button id="btnScan">📷 Leer QR</button>
+  <div id="reader"></div>
+  
+  <table id="tabla">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Código QR</th>
+        <th>Fecha y Hora</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+
+  <script>
+    let contador = 0;
+    let html5QrCode;
+
+    document.getElementById("btnScan").addEventListener("click", function () {
+      const reader = document.getElementById("reader");
+      reader.style.display = "block";
+
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
+
+      html5QrCode.start(
+        { facingMode: "environment" }, // cámara trasera
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          html5QrCode.stop();
+          reader.style.display = "none";
+
+          alert("QR leído: " + decodedText);
+
+          contador++;
+          const fecha = new Date().toLocaleString();
+
+          const tabla = document.getElementById("tabla").querySelector("tbody");
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${contador}</td>
+            <td>${decodedText}</td>
+            <td>${fecha}</td>
+          `;
+          tabla.appendChild(fila);
+        }
+      ).catch(err => {
+        console.error("Error al iniciar cámara: ", err);
+      });
+    });
+  </script>
 </body>
 </html>
