@@ -2,207 +2,54 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Control de Transporte</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Fundación Pasos de Esperanza</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body{ font-family:Arial; margin:0; background:#f4f6f9; }
-        header{ background:#1e3a8a; color:white; padding:15px; text-align:center; font-size:20px; }
-        .container{ padding:15px; }
-        .menu{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px; }
-        .card{ background:white; border-radius:12px; padding:20px; text-align:center; font-size:16px; box-shadow:0 2px 8px rgba(0,0,0,0.1); cursor:pointer; }
-        .icon{ font-size:30px; margin-bottom:10px; }
-        section{ display:none; }
-        input, select{ width:95%; padding:10px; margin:5px 0; border-radius:6px; border:1px solid #ccc; box-sizing: border-box; }
-        button{ background:#4CAF50; color:white; border:none; padding:12px; border-radius:6px; width:100%; margin-top:10px; font-size:16px; cursor:pointer; }
-        table{ width:100%; border-collapse:collapse; margin-top:10px; background: white; }
-        th,td{ border:1px solid #ddd; padding:8px; font-size:13px; text-align:center; }
-        th{ background:#4CAF50; color:white; }
-        .back{ background:#888; margin-bottom:10px; }
-        #recibo-pdf { padding: 20px; background: white; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f0f2f5; padding-bottom: 70px; }
+        header { background: #1e3a8a; color: white; padding: 20px; text-align: center; font-size: 22px; font-weight: bold; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; }
+        .container { padding: 20px; text-align: center; }
+        .welcome-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 20px; }
+        /* Menú Inferior Móvil */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .bottom-nav a { text-decoration: none; color: #555; text-align: center; font-size: 12px; width: 25%; cursor: pointer; }
+        .bottom-nav a .icon { font-size: 24px; display: block; margin-bottom: 3px; }
+        .bottom-nav a.active { color: #1e3a8a; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<header>🚕 Control de Transporte</header>
+    <header>App Fundación Pasos de Esperanza</header>
 
-<div class="container">
-    <section id="menu" style="display:block">
-        <div id="usuario"></div>
-        <div class="menu">
-            <div class="card" onclick="mostrar('registro')"><div class="icon">🚕</div>Registrar</div>
-            <div class="card" onclick="mostrar('lista')"><div class="icon">📋</div>Registros</div>
-            <div class="card" onclick="descargarCSV()"><div class="icon">📄</div>CSV</div>
-            <div class="card" onclick="mostrar('misdatos')"><div class="icon">👤</div>Perfil</div>
+    <div class="container">
+        <div class="welcome-card">
+            <h1>👋 ¡Hola!</h1>
+            <h2 id="nombre-usuario" style="color: #1e3a8a;">Tutor</h2>
+            <p>Selecciona una opción en el menú inferior para comenzar.</p>
         </div>
-    </section>
+    </div>
 
-    <section id="registro">
-        <button class="back" onclick="mostrar('menu')">⬅ Volver</button>
-        <h3>Recibo de Transporte</h3>
-        <label>Fecha</label>
-        <input type="date" id="fecha">
-        <label>Responsable</label>
-        <input id="responsable" placeholder="Nombre completo">
-        <label>Motivo del gasto</label>
-        <input id="motivo" placeholder="Ej: Visita a campo">
+    <div class="bottom-nav">
+        <a href="index.html" class="active" onclick="playSound()"><span class="icon">🏠</span>Inicio</a>
+        <a href="registro.html" onclick="playSound()"><span class="icon">🚕</span>Transporte</a>
+        <a href="tareas.html" onclick="playSound()"><span class="icon">📋</span>Tareas</a>
+        <a href="perfil.html" onclick="playSound()"><span class="icon">👤</span>Perfil</a>
+    </div>
 
-        <h3>Detalle Transporte</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Desde</th>
-                    <th>Hasta</th>
-                    <th>Tipo</th>
-                    <th>Costo</th>
-                </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-        </table>
-
-        <button onclick="agregarFila()" style="background:#2196F3">➕ Agregar tramo</button>
-        <button onclick="procesarEnvio()">📩 Generar PDF y Enviar a Telegram</button>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
         
-        <div id="area-pdf" style="display:none;">
-            <div id="recibo-pdf">
-                <h2 style="text-align:center; color:#1e3a8a">RECIBO DE TRANSPORTE</h2>
-                <hr>
-                <p><b>Fecha:</b> <span id="p-fecha"></span></p>
-                <p><b>Responsable:</b> <span id="p-resp"></span></p>
-                <p><b>Motivo:</b> <span id="p-motivo"></span></p>
-                <table style="width:100%; border: 1px solid black; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background:#eee">
-                            <th style="border:1px solid black">Desde</th>
-                            <th style="border:1px solid black">Hasta</th>
-                            <th style="border:1px solid black">Tipo</th>
-                            <th style="border:1px solid black">Costo (Bs)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="p-tabla"></tbody>
-                </table>
-                <p style="text-align:right; font-size:18px;"><b>TOTAL: <span id="p-total"></span> Bs.</b></p>
-            </div>
-        </div>
-    </section>
+        // Cargar nombre de Telegram
+        const user = tg.initDataUnsafe?.user;
+        if(user) {
+            document.getElementById('nombre-usuario').innerText = user.first_name;
+        }
 
-    <section id="lista">
-        <button class="back" onclick="mostrar('menu')">⬅ Volver</button>
-        <h3>Historial</h3>
-        <table id="tabla-historial">
-            <thead><tr><th>Fecha</th><th>Responsable</th><th>Total</th></tr></thead>
-            <tbody></tbody>
-        </table>
-    </section>
-</div>
-
-<script>
-const tg = window.Telegram.WebApp;
-tg.expand();
-
-// CONFIGURACIÓN TELEGRAM (Reemplaza con tus datos)
-const TELEGRAM_TOKEN = "7174515696:AAFhKlvybrEzHmoL7QspbbQAyPRqbWskTK0";
-const CHAT_ID = "210433510";
-
-let registros = JSON.parse(localStorage.getItem("recibos")) || [];
-
-function mostrar(id){
-    document.querySelectorAll("section").forEach(s=> s.style.display="none");
-    document.getElementById(id).style.display="block";
-}
-
-function agregarFila(){
-    const tbody = document.getElementById("tbody");
-    const fila = `
-        <tr>
-            <td><input placeholder="Origen"></td>
-            <td><input placeholder="Destino"></td>
-            <td>
-                <select>
-                    <option value="Minibús">Minibús</option>
-                    <option value="Taxi">Taxi</option>
-                    <option value="Trufi">Trufi</option>
-                    <option value="Otro">Otro</option>
-                </select>
-            </td>
-            <td><input type="number" step="0.5" placeholder="0.00"></td>
-        </tr>`;
-    // Insertar sin resetear el innerHTML anterior
-    tbody.insertAdjacentHTML('beforeend', fila);
-}
-
-async function procesarEnvio() {
-    const fecha = document.getElementById("fecha").value;
-    const resp = document.getElementById("responsable").value;
-    const motivo = document.getElementById("motivo").value;
-
-    if(!fecha || !resp) return alert("Por favor llena la fecha y el responsable");
-
-    // Llenar datos en el diseño del PDF
-    document.getElementById("p-fecha").innerText = fecha;
-    document.getElementById("p-resp").innerText = resp;
-    document.getElementById("p-motivo").innerText = motivo;
-
-    let total = 0;
-    let tablaHtml = "";
-    
-    document.querySelectorAll("#tbody tr").forEach(f => {
-        const d = f.cells[0].querySelector("input").value;
-        const h = f.cells[1].querySelector("input").value;
-        const t = f.cells[2].querySelector("select").value;
-        const c = f.cells[3].querySelector("input").value;
-        
-        total += Number(c || 0);
-        tablaHtml += `<tr><td style="border:1px solid black">${d}</td><td style="border:1px solid black">${h}</td><td style="border:1px solid black">${t}</td><td style="border:1px solid black">${c}</td></tr>`;
-    });
-
-    document.getElementById("p-tabla").innerHTML = tablaHtml;
-    document.getElementById("p-total").innerText = total.toFixed(2);
-
-    // Guardar en historial
-    registros.push({ responsable: resp, motivo, fecha, total });
-    localStorage.setItem("recibos", JSON.stringify(registros));
-
-    // Crear PDF
-    const elemento = document.getElementById("recibo-pdf");
-    const opt = {
-        margin: 10,
-        filename: `Recibo_${resp}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    try {
-        const pdfBlob = await html2pdf().set(opt).from(elemento).output('blob');
-        enviarATelegram(pdfBlob, `Recibo_${resp}.pdf`);
-    } catch (e) {
-        alert("Error generando PDF");
-    }
-}
-
-function enviarATelegram(blob, filename) {
-    const formData = new FormData();
-    formData.append("chat_id", CHAT_ID);
-    formData.append("document", blob, filename);
-    formData.append("caption", "✅ Nuevo recibo de transporte generado.");
-
-    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
-        method: "POST",
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.ok) alert("✅ PDF enviado con éxito a Telegram");
-        else alert("❌ Error al enviar a Telegram. Revisa el Token y Chat ID.");
-    })
-    .catch(err => console.error(err));
-}
-
-// Iniciar con una fila vacía
-agregarFila();
-</script>
-
+        // Sonido de clic
+        function playSound() {
+            new Audio('https://www.soundjay.com/buttons/button-16.mp3').play();
+        }
+    </script>
 </body>
 </html>

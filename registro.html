@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f0f2f5; padding-bottom: 70px; }
+        header { background: #1e3a8a; color: white; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; }
+        .container { padding: 15px; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        input, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-size: 16px; margin-top: 10px; }
+        .btn-add { background: #2196F3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th, td { border: 1px solid #ddd; padding: 5px; text-align: center; }
+        th { background: #f4f4f4; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .bottom-nav a { text-decoration: none; color: #555; text-align: center; font-size: 12px; width: 25%; }
+        .bottom-nav a .icon { font-size: 24px; display: block; margin-bottom: 3px; }
+        .bottom-nav a.active { color: #1e3a8a; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>🚕 Registro de Transporte</header>
+
+    <div class="container">
+        <div class="card">
+            <label>Fecha</label>
+            <input type="date" id="fecha">
+            <label>Responsable</label>
+            <input id="responsable" placeholder="Se autocompleta con Telegram...">
+            <label>Motivo del gasto</label>
+            <input id="motivo" placeholder="Ej: Visita al centro">
+        </div>
+
+        <div class="card">
+            <h4>Tramos</h4>
+            <table>
+                <thead><tr><th>Desde</th><th>Hasta</th><th>Tipo</th><th>Bs</th></tr></thead>
+                <tbody id="tbody"></tbody>
+            </table>
+            <button class="btn-add" onclick="agregarFila()">➕ Añadir Tramo</button>
+        </div>
+
+        <button onclick="procesar()">📩 Guardar, Crear PDF y Enviar</button>
+    </div>
+
+    <div id="area-pdf" style="display:none;">
+        <div id="recibo-pdf" style="padding: 20px; background: white; color: black;">
+            <h2 style="text-align:center;">FUNDACIÓN PASOS DE ESPERANZA</h2>
+            <hr>
+            <p><b>Fecha:</b> <span id="p-fecha"></span></p>
+            <p><b>Responsable:</b> <span id="p-resp"></span></p>
+            <p><b>Motivo:</b> <span id="p-motivo"></span></p>
+            <table style="width:100%; border: 1px solid black; border-collapse: collapse; text-align: center;">
+                <tbody id="p-tabla"></tbody>
+            </table>
+            <h3 style="text-align:right;">TOTAL: <span id="p-total"></span> Bs</h3>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="index.html" onclick="playSound()"><span class="icon">🏠</span>Inicio</a>
+        <a href="registro.html" class="active" onclick="playSound()"><span class="icon">🚕</span>Transporte</a>
+        <a href="tareas.html" onclick="playSound()"><span class="icon">📋</span>Tareas</a>
+        <a href="perfil.html" onclick="playSound()"><span class="icon">👤</span>Perfil</a>
+    </div>
+
+    <script>
+        const clickAudio = new Audio('https://www.soundjay.com/buttons/button-16.mp3');
+        const successAudio = new Audio('https://www.soundjay.com/buttons/button-09.mp3');
+        function playSound() { clickAudio.play(); }
+
+        const tg = window.Telegram.WebApp;
+        const user = tg.initDataUnsafe?.user;
+        
+        // Autocompletar y permitir edición
+        if(user) {
+            document.getElementById('responsable').value = `${user.first_name} ${user.last_name || ''}`.trim();
+        }
+
+        // Poner fecha de hoy por defecto
+        document.getElementById('fecha').valueAsDate = new Date();
+
+        function agregarFila(){
+            playSound();
+            const fila = `<tr>
+                <td><input type="text" placeholder="Origen"></td>
+                <td><input type="text" placeholder="Destino"></td>
+                <td><select><option>Minibús</option><option>Taxi</option><option>Trufi</option><option>Otro</option></select></td>
+                <td><input type="number" placeholder="0"></td>
+            </tr>`;
+            document.getElementById("tbody").insertAdjacentHTML('beforeend', fila);
+        }
+
+        async function procesar() {
+            playSound();
+            const fecha = document.getElementById("fecha").value;
+            const resp = document.getElementById("responsable").value;
+            const motivo = document.getElementById("motivo").value;
+
+            if(!resp || !motivo) return alert("Llena el responsable y el motivo.");
+
+            let total = 0; let tablaHtml = "<tr><th>Desde</th><th>Hasta</th><th>Tipo</th><th>Bs</th></tr>";
+            document.querySelectorAll("#tbody tr").forEach(f => {
+                let inputs = f.querySelectorAll("input, select");
+                total += Number(inputs[3].value || 0);
+                tablaHtml += `<tr><td style="border:1px solid black">${inputs[0].value}</td><td style="border:1px solid black">${inputs[1].value}</td><td style="border:1px solid black">${inputs[2].value}</td><td style="border:1px solid black">${inputs[3].value}</td></tr>`;
+            });
+
+            // Llenar datos PDF
+            document.getElementById("p-fecha").innerText = fecha;
+            document.getElementById("p-resp").innerText = resp;
+            document.getElementById("p-motivo").innerText = motivo;
+            document.getElementById("p-tabla").innerHTML = tablaHtml;
+            document.getElementById("p-total").innerText = total.toFixed(2);
+
+            // Guardar para el archivo TXT
+            let registros = JSON.parse(localStorage.getItem("txtRegistros")) || [];
+            registros.push({ fecha, responsable: resp, motivo, total, detalle: "Transporte" });
+            localStorage.setItem("txtRegistros", JSON.stringify(registros));
+
+            // Generar PDF
+            const opt = { margin: 10, filename: `Recibo_${resp}.pdf`, html2canvas: { scale: 2 }, jsPDF: { format: 'a5' }};
+            const pdfBlob = await html2pdf().set(opt).from(document.getElementById("recibo-pdf")).output('blob');
+            
+            successAudio.play();
+            alert("✅ Recibo generado y datos guardados. (Aquí iría la conexión al bot)");
+            // Para enviar a Telegram, usa la función fetch que te di en la respuesta anterior.
+        }
+
+        agregarFila(); // Fila inicial
+    </script>
+</body>
+</html>

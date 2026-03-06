@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tareas</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f0f2f5; padding-bottom: 70px; }
+        header { background: #1e3a8a; color: white; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; }
+        .container { padding: 15px; }
+        .task-box { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        .task-box.done { opacity: 0.6; text-decoration: line-through; }
+        input[type="text"] { width: 75%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
+        button { background: #1e3a8a; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer;}
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .bottom-nav a { text-decoration: none; color: #555; text-align: center; font-size: 12px; width: 25%; }
+        .bottom-nav a .icon { font-size: 24px; display: block; margin-bottom: 3px; }
+        .bottom-nav a.active { color: #1e3a8a; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>📋 Tareas Pendientes</header>
+
+    <div class="container">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="nueva-tarea" placeholder="Nueva tarea...">
+            <button onclick="agregarTarea()">Añadir</button>
+        </div>
+        <div id="lista-tareas"></div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="index.html" onclick="playSound()"><span class="icon">🏠</span>Inicio</a>
+        <a href="registro.html" onclick="playSound()"><span class="icon">🚕</span>Transporte</a>
+        <a href="tareas.html" class="active" onclick="playSound()"><span class="icon">📋</span>Tareas</a>
+        <a href="perfil.html" onclick="playSound()"><span class="icon">👤</span>Perfil</a>
+    </div>
+
+    <script>
+        const clickAudio = new Audio('https://www.soundjay.com/buttons/button-16.mp3');
+        const checkAudio = new Audio('https://www.soundjay.com/buttons/button-30.mp3');
+        function playSound() { clickAudio.play(); }
+
+        let tareas = JSON.parse(localStorage.getItem('tareasTutor')) || [
+            { id: 1, texto: "Entregar informe mensual", completada: false },
+            { id: 2, texto: "Visita programada zona Sur", completada: false }
+        ];
+
+        function renderizar() {
+            const div = document.getElementById('lista-tareas');
+            div.innerHTML = '';
+            tareas.forEach(t => {
+                div.innerHTML += `
+                <div class="task-box ${t.completada ? 'done' : ''}">
+                    <span>${t.texto}</span>
+                    <input type="checkbox" ${t.completada ? 'checked' : ''} onchange="toggleTarea(${t.id})">
+                </div>`;
+            });
+            localStorage.setItem('tareasTutor', JSON.stringify(tareas));
+        }
+
+        function agregarTarea() {
+            playSound();
+            const input = document.getElementById('nueva-tarea');
+            if(input.value.trim() !== '') {
+                tareas.push({ id: Date.now(), texto: input.value, completada: false });
+                input.value = '';
+                renderizar();
+            }
+        }
+
+        function toggleTarea(id) {
+            checkAudio.play();
+            let tarea = tareas.find(t => t.id === id);
+            tarea.completada = !tarea.completada;
+            renderizar();
+        }
+
+        renderizar();
+    </script>
+</body>
+</html>

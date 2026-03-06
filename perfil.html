@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f0f2f5; padding-bottom: 70px; text-align: center; }
+        header { background: #1e3a8a; color: white; padding: 15px; font-size: 18px; font-weight: bold; }
+        .container { padding: 20px; }
+        .avatar { font-size: 60px; margin: 20px 0; }
+        button { background: #333; color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; font-size: 16px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .bottom-nav a { text-decoration: none; color: #555; text-align: center; font-size: 12px; width: 25%; }
+        .bottom-nav a .icon { font-size: 24px; display: block; margin-bottom: 3px; }
+        .bottom-nav a.active { color: #1e3a8a; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>👤 Mi Perfil</header>
+
+    <div class="container">
+        <div class="avatar">👨‍💻</div>
+        <h2 id="nombre">Cargando...</h2>
+        <p style="color: gray;">Tutor - Fundación Pasos de Esperanza</p>
+
+        <button onclick="descargarTXT()">📄 Descargar Registros (.txt)</button>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="index.html" onclick="playSound()"><span class="icon">🏠</span>Inicio</a>
+        <a href="registro.html" onclick="playSound()"><span class="icon">🚕</span>Transporte</a>
+        <a href="tareas.html" onclick="playSound()"><span class="icon">📋</span>Tareas</a>
+        <a href="perfil.html" class="active" onclick="playSound()"><span class="icon">👤</span>Perfil</a>
+    </div>
+
+    <script>
+        const clickAudio = new Audio('https://www.soundjay.com/buttons/button-16.mp3');
+        function playSound() { clickAudio.play(); }
+
+        const tg = window.Telegram.WebApp;
+        const user = tg.initDataUnsafe?.user;
+        
+        if(user) {
+            document.getElementById('nombre').innerText = `${user.first_name} ${user.last_name || ''}`;
+        } else {
+            document.getElementById('nombre').innerText = "Usuario Local";
+        }
+
+        function descargarTXT() {
+            playSound();
+            let registros = JSON.parse(localStorage.getItem('txtRegistros')) || [];
+            
+            if(registros.length === 0) return alert("No hay registros guardados aún.");
+
+            let texto = "=== BASE DE DATOS: FUNDACIÓN PASOS DE ESPERANZA ===\n\n";
+            registros.forEach((r, index) => {
+                texto += `Registro #${index + 1}\n`;
+                texto += `Fecha: ${r.fecha}\n`;
+                texto += `Responsable: ${r.responsable}\n`;
+                texto += `Motivo: ${r.motivo}\n`;
+                texto += `Total Gastado: ${r.total} Bs\n`;
+                texto += `-----------------------------------\n`;
+            });
+
+            // Crear y descargar archivo
+            const blob = new Blob([texto], { type: "text/plain" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "Registros_Fundacion.txt";
+            link.click();
+        }
+    </script>
+</body>
+</html>
