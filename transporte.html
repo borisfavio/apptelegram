@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Registro de Transporte</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+text-align:center;
+padding:10px;
+}
+
+h2{
+color:#333;
+}
+
+input{
+width:90%;
+max-width:350px;
+padding:10px;
+margin:5px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button{
+background:#4CAF50;
+color:white;
+border:none;
+padding:12px;
+border-radius:6px;
+width:90%;
+max-width:350px;
+margin-top:8px;
+font-size:16px;
+}
+
+button:hover{
+background:#45a049;
+}
+
+table{
+margin-top:20px;
+border-collapse:collapse;
+width:95%;
+max-width:500px;
+margin-left:auto;
+margin-right:auto;
+background:white;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:6px;
+font-size:14px;
+}
+
+th{
+background:#4CAF50;
+color:white;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>🚕 Registro de Transporte</h2>
+
+<div id="usuario"></div>
+
+<input id="conductor" placeholder="Conductor">
+
+<input id="placa" placeholder="Placa">
+
+<input id="origen" placeholder="Origen">
+
+<input id="destino" placeholder="Destino">
+
+<input id="monto" type="number" placeholder="Monto">
+
+<button onclick="agregar()">Guardar Registro</button>
+
+<button onclick="descargarCSV()">📄 Descargar CSV</button>
+
+<table id="tabla">
+<thead>
+<tr>
+<th>#</th>
+<th>Conductor</th>
+<th>Placa</th>
+<th>Origen</th>
+<th>Destino</th>
+<th>Monto</th>
+<th>Fecha</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+<script>
+
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+const user = tg.initDataUnsafe.user;
+
+if(user){
+document.getElementById("usuario").innerHTML=
+`👤 ${user.first_name} (@${user.username || ""})`;
+}
+
+let registros=[];
+
+function agregar(){
+
+let conductor=document.getElementById("conductor").value;
+let placa=document.getElementById("placa").value;
+let origen=document.getElementById("origen").value;
+let destino=document.getElementById("destino").value;
+let monto=document.getElementById("monto").value;
+
+let fecha=new Date().toLocaleString();
+
+let registro={
+conductor,
+placa,
+origen,
+destino,
+monto,
+fecha
+};
+
+registros.push(registro);
+
+actualizarTabla();
+
+document.getElementById("conductor").value="";
+document.getElementById("placa").value="";
+document.getElementById("origen").value="";
+document.getElementById("destino").value="";
+document.getElementById("monto").value="";
+
+}
+
+function actualizarTabla(){
+
+let tbody=document.querySelector("#tabla tbody");
+tbody.innerHTML="";
+
+registros.forEach((r,i)=>{
+
+let fila=`
+<tr>
+<td>${i+1}</td>
+<td>${r.conductor}</td>
+<td>${r.placa}</td>
+<td>${r.origen}</td>
+<td>${r.destino}</td>
+<td>${r.monto}</td>
+<td>${r.fecha}</td>
+</tr>
+`;
+
+tbody.innerHTML+=fila;
+
+});
+
+}
+
+function descargarCSV(){
+
+if(registros.length==0){
+alert("No hay registros");
+return;
+}
+
+let csv="Conductor,Placa,Origen,Destino,Monto,Fecha\n";
+
+registros.forEach(r=>{
+csv+=`${r.conductor},${r.placa},${r.origen},${r.destino},${r.monto},${r.fecha}\n`;
+});
+
+let blob=new Blob([csv],{type:"text/csv"});
+
+let url=URL.createObjectURL(blob);
+
+let a=document.createElement("a");
+a.href=url;
+a.download="transporte.csv";
+a.click();
+
+}
+
+</script>
+
+</body>
+</html>

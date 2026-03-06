@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Asistencia - Telegram WebApp</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      margin: 10px 0;
+      color: #333;
+    }
+    #reader {
+      width: 100%;
+      max-width: 350px;
+      margin: 10px auto;
+      display: none;
+      border: 2px solid #4CAF50;
+      border-radius: 12px;
+    }
+    button {
+      width: 90%;
+      max-width: 350px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    table {
+      width: 100%;
+      max-width: 500px;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #4CAF50;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    .user-info {
+      font-size: 14px;
+      margin: 8px 0;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>📋 Registro de Asistencia</h1>
+
+  <div class="user-info" id="userInfo"></div>
+
+  <button id="btnScan">📷 Leer QR</button>
+  <div id="reader"></div>
+
+  <table id="tabla">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Código QR</th>
+        <th>Fecha y Hora</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Ajusta al tamaño completo del móvil
+
+    // Mostrar datos del usuario de Telegram
+    const user = tg.initDataUnsafe.user;
+    if (user) {
+      document.getElementById("userInfo").innerText =
+        `👤 Usuario: ${user.first_name} (@${user.username || "sin usuario"})`;
+    }
+
+    let contador = 0;
+    let html5QrCode;
+
+    document.getElementById("btnScan").addEventListener("click", function () {
+      const reader = document.getElementById("reader");
+      reader.style.display = "block";
+
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
+
+      html5QrCode.start(
+        { facingMode: "environment" }, // Cámara trasera del móvil
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+          html5QrCode.stop();
+          reader.style.display = "none";
+
+          alert("QR leído: " + decodedText);
+
+          contador++;
+          const fecha = new Date().toLocaleString();
+
+          const tabla = document.getElementById("tabla").querySelector("tbody");
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${contador}</td>
+            <td>${decodedText}</td>
+            <td>${fecha}</td>
+          `;
+          tabla.appendChild(fila);
+
+          // 🔹 Enviar a servidor PHP si quieres guardarlo
+          /*
+          fetch("guardar.php", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+              telegram_id: user.id,
+              telegram_username: user.username,
+              codigo_qr: decodedText
+            })
+          })
+          .then(res => res.json())
+          .then(data => alert(data.message));
+          */
+        }
+      ).catch(err => {
+        console.error("Error al iniciar cámara: ", err);
+        alert("⚠️ No se pudo acceder a la cámara.");
+      });
+    });
+  </script>
+</body>
+</html>
