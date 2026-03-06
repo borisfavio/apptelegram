@@ -1,334 +1,207 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Control de Transporte</title>
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-
-body{
-font-family:Arial;
-margin:0;
-background:#f4f6f9;
-}
-
-header{
-background:#1e3a8a;
-color:white;
-padding:15px;
-text-align:center;
-font-size:20px;
-}
-
-.container{
-padding:15px;
-}
-
-.menu{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:12px;
-margin-top:20px;
-}
-
-.card{
-background:white;
-border-radius:12px;
-padding:20px;
-text-align:center;
-font-size:16px;
-box-shadow:0 2px 8px rgba(0,0,0,0.1);
-cursor:pointer;
-transition:0.2s;
-}
-
-.card:hover{
-transform:scale(1.03);
-}
-
-.icon{
-font-size:30px;
-margin-bottom:10px;
-}
-
-section{
-display:none;
-}
-
-input{
-width:95%;
-padding:10px;
-margin:5px 0;
-border-radius:6px;
-border:1px solid #ccc;
-}
-
-button{
-background:#4CAF50;
-color:white;
-border:none;
-padding:12px;
-border-radius:6px;
-width:100%;
-margin-top:10px;
-font-size:16px;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:10px;
-}
-
-th,td{
-border:1px solid #ddd;
-padding:6px;
-font-size:13px;
-text-align:center;
-}
-
-th{
-background:#4CAF50;
-color:white;
-}
-
-.back{
-background:#888;
-margin-bottom:10px;
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <title>Control de Transporte</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body{ font-family:Arial; margin:0; background:#f4f6f9; }
+        header{ background:#1e3a8a; color:white; padding:15px; text-align:center; font-size:20px; }
+        .container{ padding:15px; }
+        .menu{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px; }
+        .card{ background:white; border-radius:12px; padding:20px; text-align:center; font-size:16px; box-shadow:0 2px 8px rgba(0,0,0,0.1); cursor:pointer; }
+        .icon{ font-size:30px; margin-bottom:10px; }
+        section{ display:none; }
+        input, select{ width:95%; padding:10px; margin:5px 0; border-radius:6px; border:1px solid #ccc; box-sizing: border-box; }
+        button{ background:#4CAF50; color:white; border:none; padding:12px; border-radius:6px; width:100%; margin-top:10px; font-size:16px; cursor:pointer; }
+        table{ width:100%; border-collapse:collapse; margin-top:10px; background: white; }
+        th,td{ border:1px solid #ddd; padding:8px; font-size:13px; text-align:center; }
+        th{ background:#4CAF50; color:white; }
+        .back{ background:#888; margin-bottom:10px; }
+        #recibo-pdf { padding: 20px; background: white; }
+    </style>
 </head>
-
 <body>
 
-<header>
-🚕 Control de Transporte
-</header>
+<header>🚕 Control de Transporte</header>
 
 <div class="container">
+    <section id="menu" style="display:block">
+        <div id="usuario"></div>
+        <div class="menu">
+            <div class="card" onclick="mostrar('registro')"><div class="icon">🚕</div>Registrar</div>
+            <div class="card" onclick="mostrar('lista')"><div class="icon">📋</div>Registros</div>
+            <div class="card" onclick="descargarCSV()"><div class="icon">📄</div>CSV</div>
+            <div class="card" onclick="mostrar('misdatos')"><div class="icon">👤</div>Perfil</div>
+        </div>
+    </section>
 
-<!-- MENU -->
+    <section id="registro">
+        <button class="back" onclick="mostrar('menu')">⬅ Volver</button>
+        <h3>Recibo de Transporte</h3>
+        <label>Fecha</label>
+        <input type="date" id="fecha">
+        <label>Responsable</label>
+        <input id="responsable" placeholder="Nombre completo">
+        <label>Motivo del gasto</label>
+        <input id="motivo" placeholder="Ej: Visita a campo">
 
-<section id="menu" style="display:block">
+        <h3>Detalle Transporte</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Desde</th>
+                    <th>Hasta</th>
+                    <th>Tipo</th>
+                    <th>Costo</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
 
-<div id="usuario"></div>
+        <button onclick="agregarFila()" style="background:#2196F3">➕ Agregar tramo</button>
+        <button onclick="procesarEnvio()">📩 Generar PDF y Enviar a Telegram</button>
+        
+        <div id="area-pdf" style="display:none;">
+            <div id="recibo-pdf">
+                <h2 style="text-align:center; color:#1e3a8a">RECIBO DE TRANSPORTE</h2>
+                <hr>
+                <p><b>Fecha:</b> <span id="p-fecha"></span></p>
+                <p><b>Responsable:</b> <span id="p-resp"></span></p>
+                <p><b>Motivo:</b> <span id="p-motivo"></span></p>
+                <table style="width:100%; border: 1px solid black; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background:#eee">
+                            <th style="border:1px solid black">Desde</th>
+                            <th style="border:1px solid black">Hasta</th>
+                            <th style="border:1px solid black">Tipo</th>
+                            <th style="border:1px solid black">Costo (Bs)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="p-tabla"></tbody>
+                </table>
+                <p style="text-align:right; font-size:18px;"><b>TOTAL: <span id="p-total"></span> Bs.</b></p>
+            </div>
+        </div>
+    </section>
 
-<div class="menu">
-
-<div class="card" onclick="mostrar('registro')">
-<div class="icon">🚕</div>
-Registrar Transporte
-</div>
-
-<div class="card" onclick="mostrar('lista')">
-<div class="icon">📋</div>
-Ver Registros
-</div>
-
-<div class="card" onclick="descargarCSV()">
-<div class="icon">📄</div>
-Exportar CSV
-</div>
-
-<div class="card" onclick="mostrar('misdatos')">
-<div class="icon">👤</div>
-Mis Datos
-</div>
-
-</div>
-
-</section>
-
-
-<!-- REGISTRO -->
-
-<section id="registro">
-
-<button class="back" onclick="mostrar('menu')">⬅ Volver</button>
-
-<h3>Registrar Transporte</h3>
-
-<input id="conductor" placeholder="Conductor">
-
-<input id="placa" placeholder="Placa">
-
-<input id="origen" placeholder="Origen">
-
-<input id="destino" placeholder="Destino">
-
-<input id="monto" type="number" placeholder="Monto">
-
-<button onclick="agregar()">Guardar</button>
-
-</section>
-
-
-<!-- LISTA -->
-
-<section id="lista">
-
-<button class="back" onclick="mostrar('menu')">⬅ Volver</button>
-
-<h3>Registros</h3>
-
-<table id="tabla">
-
-<thead>
-<tr>
-<th>#</th>
-<th>Conductor</th>
-<th>Placa</th>
-<th>Monto</th>
-</tr>
-</thead>
-
-<tbody></tbody>
-
-</table>
-
-</section>
-
-
-<!-- MIS DATOS -->
-
-<section id="misdatos">
-
-<button class="back" onclick="mostrar('menu')">⬅ Volver</button>
-
-<h3>Mis Datos</h3>
-
-<div id="infoUsuario"></div>
-
-</section>
-
+    <section id="lista">
+        <button class="back" onclick="mostrar('menu')">⬅ Volver</button>
+        <h3>Historial</h3>
+        <table id="tabla-historial">
+            <thead><tr><th>Fecha</th><th>Responsable</th><th>Total</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </section>
 </div>
 
 <script>
-
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const user = tg.initDataUnsafe.user;
+// CONFIGURACIÓN TELEGRAM (Reemplaza con tus datos)
+const TELEGRAM_TOKEN = "7174515696:AAFhKlvybrEzHmoL7QspbbQAyPRqbWskTK0";
+const CHAT_ID = "210433510";
 
-if(user){
-
-document.getElementById("usuario").innerHTML=
-`👋 Hola ${user.first_name}`;
-
-document.getElementById("infoUsuario").innerHTML=
-`
-ID: ${user.id}<br>
-Nombre: ${user.first_name}<br>
-Usuario: ${user.username || "Sin usuario"}
-`;
-
-}
-
-let registros = JSON.parse(localStorage.getItem("transportes")) || [];
+let registros = JSON.parse(localStorage.getItem("recibos")) || [];
 
 function mostrar(id){
-
-document.querySelectorAll("section").forEach(s=>{
-s.style.display="none";
-});
-
-document.getElementById(id).style.display="block";
-
-if(id=="lista"){
-actualizarTabla();
+    document.querySelectorAll("section").forEach(s=> s.style.display="none");
+    document.getElementById(id).style.display="block";
 }
 
+function agregarFila(){
+    const tbody = document.getElementById("tbody");
+    const fila = `
+        <tr>
+            <td><input placeholder="Origen"></td>
+            <td><input placeholder="Destino"></td>
+            <td>
+                <select>
+                    <option value="Minibús">Minibús</option>
+                    <option value="Taxi">Taxi</option>
+                    <option value="Trufi">Trufi</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </td>
+            <td><input type="number" step="0.5" placeholder="0.00"></td>
+        </tr>`;
+    // Insertar sin resetear el innerHTML anterior
+    tbody.insertAdjacentHTML('beforeend', fila);
 }
 
-function agregar(){
+async function procesarEnvio() {
+    const fecha = document.getElementById("fecha").value;
+    const resp = document.getElementById("responsable").value;
+    const motivo = document.getElementById("motivo").value;
 
-let conductor=document.getElementById("conductor").value;
-let placa=document.getElementById("placa").value;
-let origen=document.getElementById("origen").value;
-let destino=document.getElementById("destino").value;
-let monto=document.getElementById("monto").value;
+    if(!fecha || !resp) return alert("Por favor llena la fecha y el responsable");
 
-let fecha=new Date().toLocaleString();
+    // Llenar datos en el diseño del PDF
+    document.getElementById("p-fecha").innerText = fecha;
+    document.getElementById("p-resp").innerText = resp;
+    document.getElementById("p-motivo").innerText = motivo;
 
-let registro={
-conductor,
-placa,
-origen,
-destino,
-monto,
-fecha
-};
+    let total = 0;
+    let tablaHtml = "";
+    
+    document.querySelectorAll("#tbody tr").forEach(f => {
+        const d = f.cells[0].querySelector("input").value;
+        const h = f.cells[1].querySelector("input").value;
+        const t = f.cells[2].querySelector("select").value;
+        const c = f.cells[3].querySelector("input").value;
+        
+        total += Number(c || 0);
+        tablaHtml += `<tr><td style="border:1px solid black">${d}</td><td style="border:1px solid black">${h}</td><td style="border:1px solid black">${t}</td><td style="border:1px solid black">${c}</td></tr>`;
+    });
 
-registros.push(registro);
+    document.getElementById("p-tabla").innerHTML = tablaHtml;
+    document.getElementById("p-total").innerText = total.toFixed(2);
 
-localStorage.setItem("transportes",JSON.stringify(registros));
+    // Guardar en historial
+    registros.push({ responsable: resp, motivo, fecha, total });
+    localStorage.setItem("recibos", JSON.stringify(registros));
 
-alert("Registro guardado");
+    // Crear PDF
+    const elemento = document.getElementById("recibo-pdf");
+    const opt = {
+        margin: 10,
+        filename: `Recibo_${resp}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
 
-document.getElementById("conductor").value="";
-document.getElementById("placa").value="";
-document.getElementById("origen").value="";
-document.getElementById("destino").value="";
-document.getElementById("monto").value="";
-
+    try {
+        const pdfBlob = await html2pdf().set(opt).from(elemento).output('blob');
+        enviarATelegram(pdfBlob, `Recibo_${resp}.pdf`);
+    } catch (e) {
+        alert("Error generando PDF");
+    }
 }
 
-function actualizarTabla(){
+function enviarATelegram(blob, filename) {
+    const formData = new FormData();
+    formData.append("chat_id", CHAT_ID);
+    formData.append("document", blob, filename);
+    formData.append("caption", "✅ Nuevo recibo de transporte generado.");
 
-let tbody=document.querySelector("#tabla tbody");
-
-tbody.innerHTML="";
-
-registros.forEach((r,i)=>{
-
-tbody.innerHTML+=`
-<tr>
-<td>${i+1}</td>
-<td>${r.conductor}</td>
-<td>${r.placa}</td>
-<td>${r.monto}</td>
-</tr>
-`;
-
-});
-
+    fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.ok) alert("✅ PDF enviado con éxito a Telegram");
+        else alert("❌ Error al enviar a Telegram. Revisa el Token y Chat ID.");
+    })
+    .catch(err => console.error(err));
 }
 
-function descargarCSV(){
-
-if(registros.length==0){
-
-alert("No hay registros");
-
-return;
-
-}
-
-let csv="Conductor,Placa,Origen,Destino,Monto,Fecha\n";
-
-registros.forEach(r=>{
-csv+=`${r.conductor},${r.placa},${r.origen},${r.destino},${r.monto},${r.fecha}\n`;
-});
-
-let blob=new Blob([csv],{type:"text/csv"});
-
-let url=URL.createObjectURL(blob);
-
-let a=document.createElement("a");
-
-a.href=url;
-a.download="transporte.csv";
-
-a.click();
-
-}
-
+// Iniciar con una fila vacía
+agregarFila();
 </script>
 
 </body>

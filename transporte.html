@@ -2,67 +2,63 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Registro de Transporte</title>
+<title>Recibo Transporte</title>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 
 body{
 font-family:Arial;
-background:#f2f2f2;
-text-align:center;
+background:#f4f6f9;
 padding:10px;
 }
 
 h2{
-color:#333;
+text-align:center;
 }
 
 input{
-width:90%;
-max-width:350px;
-padding:10px;
-margin:5px;
-border-radius:6px;
+width:100%;
+padding:8px;
+margin:5px 0;
+border-radius:5px;
 border:1px solid #ccc;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:6px;
+text-align:center;
+}
+
+th{
+background:#4CAF50;
+color:white;
 }
 
 button{
 background:#4CAF50;
 color:white;
 border:none;
-padding:12px;
+padding:10px;
+margin-top:10px;
 border-radius:6px;
-width:90%;
-max-width:350px;
-margin-top:8px;
+width:100%;
 font-size:16px;
 }
 
-button:hover{
-background:#45a049;
-}
-
-table{
-margin-top:20px;
-border-collapse:collapse;
-width:95%;
-max-width:500px;
-margin-left:auto;
-margin-right:auto;
+#recibo{
 background:white;
-}
-
-th,td{
-border:1px solid #ccc;
-padding:6px;
-font-size:14px;
-}
-
-th{
-background:#4CAF50;
-color:white;
+padding:20px;
+margin-top:20px;
+display:none;
 }
 
 </style>
@@ -71,134 +67,171 @@ color:white;
 
 <body>
 
-<h2>🚕 Registro de Transporte</h2>
+<h2>Registro de Transporte</h2>
 
-<div id="usuario"></div>
+<label>Fecha</label>
+<input type="date" id="fecha">
 
-<input id="conductor" placeholder="Conductor">
+<label>Responsable</label>
+<input id="responsable">
 
-<input id="placa" placeholder="Placa">
+<label>Motivo del gasto</label>
+<input id="motivo">
 
-<input id="origen" placeholder="Origen">
-
-<input id="destino" placeholder="Destino">
-
-<input id="monto" type="number" placeholder="Monto">
-
-<button onclick="agregar()">Guardar Registro</button>
-
-<button onclick="descargarCSV()">📄 Descargar CSV</button>
+<h3>Transportes</h3>
 
 <table id="tabla">
 <thead>
 <tr>
-<th>#</th>
-<th>Conductor</th>
-<th>Placa</th>
-<th>Origen</th>
-<th>Destino</th>
-<th>Monto</th>
-<th>Fecha</th>
+<th>Desde</th>
+<th>Hasta</th>
+<th>Tipo Transporte</th>
+<th>Costo</th>
 </tr>
 </thead>
 
-<tbody></tbody>
+<tbody id="tbody"></tbody>
 
 </table>
 
+<button onclick="agregarFila()">➕ Agregar transporte</button>
+
+<button onclick="generarRecibo()">📄 Generar Recibo</button>
+
+<div id="recibo"></div>
+
 <script>
 
-const tg = window.Telegram.WebApp;
-tg.expand();
+function agregarFila(){
 
-const user = tg.initDataUnsafe.user;
-
-if(user){
-document.getElementById("usuario").innerHTML=
-`👤 ${user.first_name} (@${user.username || ""})`;
-}
-
-let registros=[];
-
-function agregar(){
-
-let conductor=document.getElementById("conductor").value;
-let placa=document.getElementById("placa").value;
-let origen=document.getElementById("origen").value;
-let destino=document.getElementById("destino").value;
-let monto=document.getElementById("monto").value;
-
-let fecha=new Date().toLocaleString();
-
-let registro={
-conductor,
-placa,
-origen,
-destino,
-monto,
-fecha
-};
-
-registros.push(registro);
-
-actualizarTabla();
-
-document.getElementById("conductor").value="";
-document.getElementById("placa").value="";
-document.getElementById("origen").value="";
-document.getElementById("destino").value="";
-document.getElementById("monto").value="";
-
-}
-
-function actualizarTabla(){
-
-let tbody=document.querySelector("#tabla tbody");
-tbody.innerHTML="";
-
-registros.forEach((r,i)=>{
-
-let fila=`
+let fila = `
 <tr>
-<td>${i+1}</td>
-<td>${r.conductor}</td>
-<td>${r.placa}</td>
-<td>${r.origen}</td>
-<td>${r.destino}</td>
-<td>${r.monto}</td>
-<td>${r.fecha}</td>
+<td><input></td>
+<td><input></td>
+<td><input></td>
+<td><input type="number" oninput="calcular()"></td>
 </tr>
 `;
 
-tbody.innerHTML+=fila;
+document.getElementById("tbody").innerHTML += fila;
+
+}
+
+function calcular(){
+
+let total=0;
+
+document.querySelectorAll("#tbody tr").forEach(f=>{
+
+let costo=f.children[3].querySelector("input").value;
+
+total += Number(costo || 0);
 
 });
 
+return total;
+
 }
 
-function descargarCSV(){
+function numeroALetras(num){
 
-if(registros.length==0){
-alert("No hay registros");
-return;
+const unidades=[
+"","Uno","Dos","Tres","Cuatro","Cinco","Seis","Siete","Ocho","Nueve","Diez"
+];
+
+if(num<=10) return unidades[num];
+
+return num;
+
 }
 
-let csv="Conductor,Placa,Origen,Destino,Monto,Fecha\n";
+function generarRecibo(){
 
-registros.forEach(r=>{
-csv+=`${r.conductor},${r.placa},${r.origen},${r.destino},${r.monto},${r.fecha}\n`;
+let fecha=document.getElementById("fecha").value;
+let responsable=document.getElementById("responsable").value;
+let motivo=document.getElementById("motivo").value;
+
+let filasHTML="";
+let total=0;
+
+document.querySelectorAll("#tbody tr").forEach(f=>{
+
+let desde=f.children[0].querySelector("input").value;
+let hasta=f.children[1].querySelector("input").value;
+let tipo=f.children[2].querySelector("input").value;
+let costo=f.children[3].querySelector("input").value;
+
+total += Number(costo || 0);
+
+filasHTML += `
+<tr>
+<td>${desde}</td>
+<td>${hasta}</td>
+<td>${tipo}</td>
+<td>${costo}</td>
+</tr>
+`;
+
 });
 
-let blob=new Blob([csv],{type:"text/csv"});
+let letras = numeroALetras(total);
 
-let url=URL.createObjectURL(blob);
+let html=`
 
-let a=document.createElement("a");
-a.href=url;
-a.download="transporte.csv";
-a.click();
+<h3 style="text-align:center">FUNDACIÓN PASOS DE ESPERANZA</h3>
+<h4 style="text-align:center">RECIBO DE GASTO DE TRANSPORTE</h4>
+
+<p><b>Fecha:</b> ${fecha}</p>
+<p><b>Responsable:</b> ${responsable}</p>
+<p><b>Motivo del gasto:</b> ${motivo}</p>
+
+<table>
+<tr>
+<th>Desde</th>
+<th>Hasta</th>
+<th>Tipo Transporte</th>
+<th>Costo (Bs)</th>
+</tr>
+
+${filasHTML}
+
+<tr>
+<td colspan="3"><b>TOTAL</b></td>
+<td><b>${total.toFixed(2)}</b></td>
+</tr>
+
+</table>
+
+<p><b>SON:</b> ${letras} con 00/100 Bolivianos</p>
+
+<br><br>
+
+<table style="width:100%;border:none">
+<tr>
+<td style="border:none;text-align:center">
+_________________________<br>
+Entregué conforme
+</td>
+
+<td style="border:none;text-align:center">
+_________________________<br>
+Recibí conforme
+</td>
+</tr>
+</table>
+
+<button onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+
+`;
+
+let div=document.getElementById("recibo");
+
+div.innerHTML=html;
+div.style.display="block";
 
 }
+
+agregarFila();
 
 </script>
 
